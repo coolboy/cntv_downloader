@@ -11,7 +11,6 @@ import os
 import errno
 import urllib
 import subprocess
-import sys
 import concurrent.futures
 from urllib.request import urlopen
 from html.parser import HTMLParser
@@ -46,7 +45,6 @@ class FlvcdHTMLParser(HTMLParser):
         return self.urls
 
 '''
-tester : http://www.pythonregex.com/
 http://kejiao.cntv.cn/bjjt/classpage/video/20120824/100886.shtml
 http://www.flvcd.com/parse.php?kw=http%3A%2F%2Fkejiao.cntv.cn%2Fbjjt%2Fclasspage%2Fvideo%2F20120824%2F100886.shtml&format=high&flag=one
 '''
@@ -78,18 +76,6 @@ def downloadUrlToFile(url, saveFilePath):
     print('Saving ' + url + ' to ' + saveFilePath)
     wgetDownload(url, saveFilePath)
     print('Done ' + saveFilePath)
-    '''
-    print('Saving ' + url + ' to ' + saveFilePath)
-    retryCount = 0
-    while retryCount < 3:
-        try:
-            urllib.request.urlretrieve(url, saveFilePath)
-        except Exception as exp:
-            print('Exception : ' + str(exp))
-            retryCount += 1
-        
-    print('Done ' + saveFilePath)
-    '''
 
 def mkdir_p(path):
     try:
@@ -130,22 +116,7 @@ def main():
         url = future_to_url[future]
         if future.exception() is not None:
             print('%r generated an exception: %s' % (url, future.exception()))
-#        else:
-#            print('Succeed')
-    
-    '''
-        # Generate download urls file with title
-        fileName = outputFolderPath + '/' + titleToUrls['Title'] + '.txt'
-        with open(fileName, 'w') as outputFile:
-            mp4Urls = titleToUrls['Urls']
             
-            print( 'Wrting ' + fileName + ' with ' + str(len(mp4Urls)) + ' urls')
-            for mp4Url in mp4Urls:
-                outputFile.write(mp4Url + '\n')
-            
-            outputFile.close()
-    '''
-    
 # Main file
 if __name__ == '__main__':
     main()
