@@ -10,10 +10,38 @@ import argparse
 import os
 import errno
 import urllib
+import logging
 import subprocess
 import concurrent.futures
 from urllib.request import urlopen
 from html.parser import HTMLParser
+
+# Init logging
+def getLogger():
+    return logging.getLogger(__name__)
+
+def initLogging(logFilePath):
+    logging.disable(logging.NOTSET)
+    
+    logger = getLogger()
+    logger.setLevel(logging.INFO)
+    
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    
+    # create console handler
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.WARN)
+    sh.setFormatter(formatter)
+    
+    # create file handler
+    fh = logging.FileHandler(logFilePath, mode='a', encoding='utf-8')
+#    fh.setLevel(logging.INFO)
+    fh.setFormatter(formatter)
+    
+    # append handlers
+    logger.addHandler(sh)
+    logger.addHandler(fh)
 
 # create a subclass and override the handler methods
 class FlvcdHTMLParser(HTMLParser):
@@ -65,17 +93,19 @@ def getCNTVDownloadLinksWithTitle(cntvUrl):
     return {'Title' : flvcdParser.getTitle(), 'Urls' : flvcdParser.getUrls()}
 
 def wgetDownload(download_url, filename):
-    wget_opts = ['/opt/local/bin/wget', download_url, '-O', filename, '-q']
+    wget_opts = 'wget ' + download_url + ' -O "' + filename + '" -q'
     if os.path.exists(download_url):
         wget_opts.append('-c')
-    exit_code = subprocess.call(wget_opts)
+    # When shell is true, we should not use list
+    exit_code = subprocess.call(wget_opts, shell=True)
     if exit_code != 0:
         raise Exception(filename + ' : wget exited abnormaly')
 
 def downloadUrlToFile(url, saveFilePath):
-    print('Saving ' + url + ' to ' + saveFilePath)
+    logger = getLogger()
+    logger.info('Saving ' + url + ' to ' + saveFilePath)
     wgetDownload(url, saveFilePath)
-    print('Done ' + saveFilePath)
+    logger.info('Done ' + saveFilePath)
 
 def mkdir_p(path):
     try:
@@ -94,6 +124,9 @@ def main():
     inputFilePath = args.input_urls_path
     outputFolderPath = args.output_folder
     
+    initLogging('cntv.log')
+    logger = getLogger()
+    
     with open(inputFilePath) as file:
         content = file.readlines()
     
@@ -101,7 +134,7 @@ def main():
     future_to_url = dict()
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         for cntvUrl in content :
-            print( 'Getting ' + cntvUrl)
+            logger.info( 'Getting ' + cntvUrl)
             titleToUrls = getCNTVDownloadLinksWithTitle(cntvUrl);
             
             saveFileDirPath = outputFolderPath + '/' + titleToUrls['Title']
@@ -115,8 +148,8 @@ def main():
     for future in concurrent.futures.as_completed(future_to_url):
         url = future_to_url[future]
         if future.exception() is not None:
-            print('%r generated an exception: %s' % (url, future.exception()))
+            logger.warning('%r generated an exception: %s' % (url, future.exception()))
             
-# Main file
+# Main method
 if __name__ == '__main__':
     main()
