@@ -4,6 +4,8 @@
 Created on Aug 26, 2012
 
 @author: coolcute
+
+Require: wget MP4Box 
 '''
 
 import argparse
@@ -130,9 +132,11 @@ def main():
     with open(inputFilePath) as file:
         content = file.readlines()
     
-    # Read file with cntv video link inside
+    # Download cntv mp4s with the urls and titles as the folder name
+    # TODO : refactor to merge when everything is fine
     future_to_url = dict()
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        # for each cntv url ( one video ) 
         for cntvUrl in content :
             logger.info( 'Getting ' + cntvUrl)
             titleToUrls = getCNTVDownloadLinksWithTitle(cntvUrl);
@@ -141,14 +145,16 @@ def main():
             mkdir_p(saveFileDirPath)
             
             for mp4url in titleToUrls['Urls']:
-                mp4urlPath = urllib.parse.urlparse(mp4url)[2] # 2 for path
-                fileName = saveFileDirPath + mp4urlPath[mp4urlPath.rindex(r'/'):] # file the file name
+                mp4urlPath = urllib.parse.urlparse(mp4url)[2] # 2 is the index for path
+                fileName = saveFileDirPath + mp4urlPath[mp4urlPath.rindex(r'/'):] # find the file name
                 future_to_url[executor.submit(downloadUrlToFile, mp4url, fileName)] = mp4url
 
     for future in concurrent.futures.as_completed(future_to_url):
         url = future_to_url[future]
         if future.exception() is not None:
             logger.warning('%r generated an exception: %s' % (url, future.exception()))
+            
+    # TODO : Merge the parted mp4
             
 # Main method
 if __name__ == '__main__':
