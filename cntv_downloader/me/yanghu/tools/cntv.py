@@ -12,38 +12,16 @@ import argparse
 import os
 import errno
 import urllib
-import logging
 import subprocess
 import concurrent.futures
+
 from urllib.request import urlopen
 from html.parser import HTMLParser
 
-# Init logging
-def getLogger():
-    return logging.getLogger(__name__)
+from me.yanghu.log.Logger import createLogger
+from me.yanghu.log.Logger import setLogFilePath
 
-def initLogging(logFilePath):
-    logging.disable(logging.NOTSET)
-    
-    logger = getLogger()
-    logger.setLevel(logging.INFO)
-    
-    # create formatter
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    
-    # create console handler
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.WARN)
-    sh.setFormatter(formatter)
-    
-    # create file handler
-    fh = logging.FileHandler(logFilePath, mode='a', encoding='utf-8')
-#    fh.setLevel(logging.INFO)
-    fh.setFormatter(formatter)
-    
-    # append handlers
-    logger.addHandler(sh)
-    logger.addHandler(fh)
+logger = createLogger(__name__)
 
 # create a subclass and override the handler methods
 class FlvcdHTMLParser(HTMLParser):
@@ -104,7 +82,6 @@ def wgetDownload(download_url, filename):
         raise Exception(filename + ' : wget exited abnormaly')
 
 def downloadUrlToFile(url, saveFilePath):
-    logger = getLogger()
     logger.info('Saving ' + url + ' to ' + saveFilePath)
     wgetDownload(url, saveFilePath)
     logger.info('Done ' + saveFilePath)
@@ -118,6 +95,7 @@ def mkdir_p(path):
         else: raise
 
 def main():
+    # Get arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input-urls-path', help='urls as txt file location')
     parser.add_argument('-o', '--output-folder', help='output folder')
@@ -126,14 +104,13 @@ def main():
     inputFilePath = args.input_urls_path
     outputFolderPath = args.output_folder
     
-    initLogging('cntv.log')
-    logger = getLogger()
+    setLogFilePath('cntv.log')
     
     with open(inputFilePath) as file:
         content = file.readlines()
     
     # Download cntv mp4s with the urls and titles as the folder name
-    # TODO : refactor to merge when everything is fine
+    # TODO : refactor to merge into one when download is ready
     future_to_url = dict()
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         # for each cntv url ( one video ) 
@@ -153,8 +130,6 @@ def main():
         url = future_to_url[future]
         if future.exception() is not None:
             logger.warning('%r generated an exception: %s' % (url, future.exception()))
-            
-    # TODO : Merge the parted mp4
             
 # Main method
 if __name__ == '__main__':

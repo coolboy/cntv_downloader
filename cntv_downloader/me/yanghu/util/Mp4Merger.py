@@ -8,24 +8,30 @@ Created on Sep 9, 2012
 import argparse
 import subprocess
 
-# ls | sort -t- -k2 -n | sed -e 's/^/-cat /g' | tr "\n" " " | xargs MP4Box new.mp4
+from me.yanghu.log.Logger import createLogger
+
+logger = createLogger(__name__)
+
+# ls *.mp4 | sort -t- -k2 -n | sed -e 's/^/-cat /g' | tr "\n" " " | xargs MP4Box new.mp4
 
 class Mp4Merger(object):
-    '''
-    classdocs
-    '''
-    mergeCmd = "ls | sort -t- -k2 -n | sed -e 's/^/-cat /g' | tr \"\\n\" \" \" | xargs MP4Box "
+    
+    mergeCmd = "ls *.mp4 | sort -t- -k2 -n | sed -e 's/^/-cat /g' | tr \"\\n\" \" \" | xargs MP4Box "
+    
     def __init__( self, workingDir, fileName):
         self.workingDir = workingDir
         self.fileName = fileName
       
     def merge(self):
         completeMergeCmd = self.mergeCmd + self.fileName
+        logger.info('Merging : ' + completeMergeCmd)
         exit_code = subprocess.call(completeMergeCmd, cwd=self.workingDir, shell=True)
-        # TODO move logger into a class
-        exit_code = -1;
+        # TODO delete the source
+        if exit_code != 0:
+            logger.error('Mp4 merging error : ' + self.workingDir)
 
 # Tester
+# TODO unit test?
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input-mp4-directory', help='the directory contains mp4s')
