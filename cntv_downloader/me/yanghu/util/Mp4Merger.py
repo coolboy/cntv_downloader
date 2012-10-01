@@ -28,7 +28,7 @@ class Mp4Merger(object):
         exit_code = subprocess.call(completeMergeCmd, cwd=self.workingDir, shell=True)
         # TODO delete the source
         if exit_code != 0:
-            logger.error('Mp4 merging error : ' + self.workingDir)
+            raise Exception('Mp4 merging error : ' + self.workingDir)
 
 # Tester
 # TODO unit test?

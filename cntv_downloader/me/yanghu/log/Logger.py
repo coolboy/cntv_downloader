@@ -24,7 +24,8 @@ def createLogger(loggerName):
     
     # create console handler
     sh = logging.StreamHandler()
-    sh.setLevel(logging.WARN)
+#    sh.setLevel(logging.WARN)
+#    sh.setLevel(logging.INFO)
     sh.setFormatter(formatter)
     
     # create file handler

@@ -20,7 +20,11 @@ from html.parser import HTMLParser
 
 from me.yanghu.log.Logger import createLogger
 from me.yanghu.log.Logger import setLogFilePath
+from me.yanghu.util.Mp4Merger import Mp4Merger
 
+# set the global log file name
+# TODO may need to find a better way to set this
+setLogFilePath('cntv.log')
 logger = createLogger(__name__)
 
 # create a subclass and override the handler methods
@@ -74,8 +78,8 @@ def getCNTVDownloadLinksWithTitle(cntvUrl):
 
 def wgetDownload(download_url, filename):
     wget_opts = 'wget ' + download_url + ' -O "' + filename + '" -q'
-    if os.path.exists(download_url):
-        wget_opts.append('-c')
+    if os.path.exists(filename):
+        wget_opts += ' -c'
     # When shell is true, we should not use list
     exit_code = subprocess.call(wget_opts, shell=True)
     if exit_code != 0:
@@ -94,6 +98,9 @@ def mkdir_p(path):
             pass
         else: raise
 
+def executeMp4Merge(mp4Merger):
+    mp4Merger.merge()
+
 def main():
     # Get arguments
     parser = argparse.ArgumentParser()
@@ -104,32 +111,36 @@ def main():
     inputFilePath = args.input_urls_path
     outputFolderPath = args.output_folder
     
-    setLogFilePath('cntv.log')
-    
     with open(inputFilePath) as file:
         content = file.readlines()
     
     # Download cntv mp4s with the urls and titles as the folder name
-    # TODO : refactor to merge into one when download is ready
-    future_to_url = dict()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        # for each cntv url ( one video ) 
-        for cntvUrl in content :
-            logger.info( 'Getting ' + cntvUrl)
-            titleToUrls = getCNTVDownloadLinksWithTitle(cntvUrl);
-            
-            saveFileDirPath = outputFolderPath + '/' + titleToUrls['Title']
-            mkdir_p(saveFileDirPath)
-            
+    # for each cntv url ( one video ) 
+    for cntvUrl in content :
+        logger.info( 'Getting ' + cntvUrl)
+        titleToUrls = getCNTVDownloadLinksWithTitle(cntvUrl);
+        
+        saveFileDirPath = outputFolderPath + '/' + titleToUrls['Title']
+        mkdir_p(saveFileDirPath)
+        
+        future_to_url = dict()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
             for mp4url in titleToUrls['Urls']:
                 mp4urlPath = urllib.parse.urlparse(mp4url)[2] # 2 is the index for path
                 fileName = saveFileDirPath + mp4urlPath[mp4urlPath.rindex(r'/'):] # find the file name
                 future_to_url[executor.submit(downloadUrlToFile, mp4url, fileName)] = mp4url
-
-    for future in concurrent.futures.as_completed(future_to_url):
-        url = future_to_url[future]
-        if future.exception() is not None:
-            logger.warning('%r generated an exception: %s' % (url, future.exception()))
+            
+            bShouldMerge = True
+            
+            for future in concurrent.futures.as_completed(future_to_url):
+                url = future_to_url[future]
+                if future.exception() is not None:
+                    logger.warning('%r generated an exception: %s' % (url, future.exception()))
+                    bShouldMerge = False
+            
+            if (bShouldMerge):
+                mp4Merger = Mp4Merger(saveFileDirPath, 'new.mp4')
+                executor.submit(executeMp4Merge, mp4Merger)
             
 # Main method
 if __name__ == '__main__':
