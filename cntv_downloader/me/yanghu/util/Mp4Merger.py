@@ -16,7 +16,7 @@ logger = createLogger(__name__)
 
 class Mp4Merger(object):
     
-    mergeCmd = "ls *.mp4 | sort -t- -k2 -n | sed -e 's/^/-cat /g' | tr \"\\n\" \" \" | xargs MP4Box "
+    mergeCmd = "ls *.mp4 | sort -t- -k2 -n | sed -e 's/^/-cat /g' | tr \"\\n\" \" \" | xargs MP4Box '"
     removeSourceCmd = "rm `ls | grep -v '"
     
     def __init__( self, workingDir, fileName):
@@ -24,7 +24,7 @@ class Mp4Merger(object):
         self.fileName = fileName
       
     def merge(self, deleteSourceOnSuccess = False):
-        completeMergeCmd = self.mergeCmd + self.fileName
+        completeMergeCmd = self.mergeCmd + self.fileName + "'"
         logger.info('Merging : ' + completeMergeCmd)
         exit_code = subprocess.call(completeMergeCmd, cwd=self.workingDir, shell=True)
         
