@@ -17,18 +17,25 @@ logger = createLogger(__name__)
 class Mp4Merger(object):
     
     mergeCmd = "ls *.mp4 | sort -t- -k2 -n | sed -e 's/^/-cat /g' | tr \"\\n\" \" \" | xargs MP4Box "
+    removeSourceCmd = "rm `ls | grep -v '"
     
     def __init__( self, workingDir, fileName):
         self.workingDir = workingDir
         self.fileName = fileName
       
-    def merge(self):
+    def merge(self, deleteSourceOnSuccess = False):
         completeMergeCmd = self.mergeCmd + self.fileName
         logger.info('Merging : ' + completeMergeCmd)
         exit_code = subprocess.call(completeMergeCmd, cwd=self.workingDir, shell=True)
-        # TODO delete the source
+        
         if exit_code != 0:
             raise Exception('Mp4 merging error : ' + self.workingDir)
+        
+        # delete the source
+        if (deleteSourceOnSuccess) :
+            completeRemoveSourceCmd = self.removeSourceCmd + self.fileName + "'`"
+            logger.info('Removing source : ' + completeRemoveSourceCmd)
+            exit_code = subprocess.call(completeRemoveSourceCmd, cwd=self.workingDir, shell=True)
 
 # Tester
 # TODO unit test?
@@ -42,7 +49,7 @@ def main():
     outputFileName = args.output_file_name
     # mp4Merger = Mp4Merger(r"/Volumes/video/百家讲坛/王立群读宋史/tmp", r"123.mp4")
     mp4Merger = Mp4Merger(inputMp4DirectoryPath, outputFileName)
-    mp4Merger.merge()
+    mp4Merger.merge(True)
 
 # Main method
 if __name__ == '__main__':

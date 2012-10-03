@@ -99,7 +99,7 @@ def mkdir_p(path):
         else: raise
 
 def executeMp4Merge(mp4Merger):
-    mp4Merger.merge()
+    mp4Merger.merge(True) # delete the source files on success
 
 def main():
     # Get arguments
@@ -132,14 +132,16 @@ def main():
             
             bShouldMerge = True
             
+            # check if there is no exception
             for future in concurrent.futures.as_completed(future_to_url):
                 url = future_to_url[future]
                 if future.exception() is not None:
                     logger.warning('%r generated an exception: %s' % (url, future.exception()))
                     bShouldMerge = False
             
+            # merge the mp4 file
             if (bShouldMerge):
-                mp4Merger = Mp4Merger(saveFileDirPath, 'new.mp4')
+                mp4Merger = Mp4Merger(saveFileDirPath, titleToUrls['Title'] + '.mp4')
                 executor.submit(executeMp4Merge, mp4Merger)
             
 # Main method
